@@ -281,14 +281,14 @@ func (k *Kinsumer) dynamoCreateTableIfNotExists(name, distKey string) error {
 	if err != nil {
 		return err
 	}
-	err = k.dynamodb.WaitUntilTableExistsWithContext(
+
+	return k.dynamodb.WaitUntilTableExistsWithContext(
 		aws.BackgroundContext(),
 		&dynamodb.DescribeTableInput{
 			TableName: aws.String(name),
 		},
 		request.WithWaiterDelay(request.ConstantWaiterDelay(k.config.dynamoWaiterDelay)),
 	)
-	return err
 }
 
 // dynamoDeleteTableIfExists delete a table with the given name if it exists
@@ -297,34 +297,30 @@ func (k *Kinsumer) dynamoDeleteTableIfExists(name string) error {
 	if !k.dynamoTableExists(name) {
 		return nil
 	}
+
 	_, err := k.dynamodb.DeleteTable(&dynamodb.DeleteTableInput{
 		TableName: aws.String(name),
 	})
 	if err != nil {
 		return err
 	}
-	err = k.dynamodb.WaitUntilTableNotExistsWithContext(
+
+	return k.dynamodb.WaitUntilTableNotExistsWithContext(
 		aws.BackgroundContext(),
 		&dynamodb.DescribeTableInput{
 			TableName: aws.String(name),
 		},
 		request.WithWaiterDelay(request.ConstantWaiterDelay(k.config.dynamoWaiterDelay)),
 	)
-	return err
 }
 
 // kinesisStreamReady returns an error if the given stream is not ACTIVE
 func (k *Kinsumer) kinesisStreamReady() error {
-	out, err := k.kinesis.DescribeStream(&kinesis.DescribeStreamInput{
+	_, err := k.kinesis.ListShards(&kinesis.ListShardsInput{
 		StreamName: aws.String(k.streamName),
 	})
 	if err != nil {
-		return fmt.Errorf("error describing stream %s: %v", k.streamName, err)
-	}
-
-	status := aws.StringValue(out.StreamDescription.StreamStatus)
-	if status != "ACTIVE" && status != "UPDATING" {
-		return fmt.Errorf("stream %s exists but state '%s' is not 'ACTIVE' or 'UPDATING'", k.streamName, status)
+		return fmt.Errorf("error listing shards for stream %s: %v", k.streamName, err)
 	}
 
 	return nil
@@ -338,15 +334,16 @@ func (k *Kinsumer) Run() error {
 	if err := k.dynamoTableActive(k.checkpointTableName); err != nil {
 		return err
 	}
+
 	if err := k.dynamoTableActive(k.clientsTableName); err != nil {
 		return err
 	}
+
 	if err := k.kinesisStreamReady(); err != nil {
 		return err
 	}
 
-	allowRun := atomic.CompareAndSwapInt32(&k.numberOfRuns, 0, 1)
-	if !allowRun {
+	if allowRun := atomic.CompareAndSwapInt32(&k.numberOfRuns, 0, 1); !allowRun {
 		return ErrRunTwice
 	}
 
@@ -472,9 +469,11 @@ func (k *Kinsumer) CreateRequiredTables() error {
 	g.Go(func() error {
 		return k.dynamoCreateTableIfNotExists(k.clientsTableName, "ID")
 	})
+
 	g.Go(func() error {
 		return k.dynamoCreateTableIfNotExists(k.checkpointTableName, "Shard")
 	})
+
 	g.Go(func() error {
 		return k.dynamoCreateTableIfNotExists(k.metadataTableName, "Key")
 	})
@@ -490,9 +489,11 @@ func (k *Kinsumer) DeleteTables() error {
 	g.Go(func() error {
 		return k.dynamoDeleteTableIfExists(k.clientsTableName)
 	})
+
 	g.Go(func() error {
 		return k.dynamoDeleteTableIfExists(k.checkpointTableName)
 	})
+
 	g.Go(func() error {
 		return k.dynamoDeleteTableIfExists(k.metadataTableName)
 	})

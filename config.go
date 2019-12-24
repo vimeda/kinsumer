@@ -50,7 +50,7 @@ type Config struct {
 // NewConfig returns a default Config struct
 func NewConfig() Config {
 	return Config{
-		throttleDelay:         time.Second * 10,
+		throttleDelay:         time.Millisecond * 250,
 		commitFrequency:       time.Second * 10,
 		shardCheckFrequency:   time.Minute * 5,
 		leaderActionFrequency: time.Minute * 5,

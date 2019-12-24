@@ -1,12 +1,10 @@
-// Copyright (c) 2016 Twitch Interactive.
-
 package kinsumer
 
 import (
 	"testing"
 	"time"
 
-	"github.com/twitchscience/kinsumer/mocks"
+	"github.com/vimeda/kinsumer/mocks"
 )
 
 func TestCheckpointer(t *testing.T) {

@@ -1,3 +1,5 @@
+// Copyright (c) 2016 Twitch Interactive.
+
 package kinsumer
 
 import (

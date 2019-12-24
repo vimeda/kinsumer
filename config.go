@@ -51,13 +51,13 @@ type Config struct {
 func NewConfig() Config {
 	return Config{
 		throttleDelay:         time.Millisecond * 250,
-		commitFrequency:       time.Second * 10,
-		shardCheckFrequency:   time.Minute * 5,
-		leaderActionFrequency: time.Minute * 5,
+		commitFrequency:       time.Millisecond * 1000,
+		shardCheckFrequency:   time.Minute,
+		leaderActionFrequency: time.Minute,
 		bufferSize:            100,
 		stats:                 &NoopStatReceiver{},
-		dynamoReadCapacity:    5,
-		dynamoWriteCapacity:   5,
+		dynamoReadCapacity:    10,
+		dynamoWriteCapacity:   10,
 		dynamoWaiterDelay:     time.Second * 3,
 		logger:                &DefaultLogger{},
 		shardIteratorType:     kinesis.ShardIteratorTypeLatest,

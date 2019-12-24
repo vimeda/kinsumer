@@ -4,6 +4,8 @@ package kinsumer
 
 import (
 	"time"
+
+	"github.com/aws/aws-sdk-go/service/kinesis"
 )
 
 //TODO: Update documentation to include the defaults
@@ -41,21 +43,24 @@ type Config struct {
 	dynamoWriteCapacity int64
 	// Time to wait between attempts to verify tables were created/deleted completely
 	dynamoWaiterDelay time.Duration
+	// shardIteratorType
+	shardIteratorType string
 }
 
 // NewConfig returns a default Config struct
 func NewConfig() Config {
 	return Config{
-		throttleDelay:         250 * time.Millisecond,
-		commitFrequency:       1000 * time.Millisecond,
-		shardCheckFrequency:   1 * time.Minute,
-		leaderActionFrequency: 1 * time.Minute,
+		throttleDelay:         time.Millisecond * 250,
+		commitFrequency:       time.Millisecond * 1000,
+		shardCheckFrequency:   time.Minute,
+		leaderActionFrequency: time.Minute,
 		bufferSize:            100,
 		stats:                 &NoopStatReceiver{},
 		dynamoReadCapacity:    10,
 		dynamoWriteCapacity:   10,
-		dynamoWaiterDelay:     3 * time.Second,
+		dynamoWaiterDelay:     time.Second * 3,
 		logger:                &DefaultLogger{},
+		shardIteratorType:     kinesis.ShardIteratorTypeLatest,
 	}
 }
 
@@ -110,6 +115,12 @@ func (c Config) WithDynamoWriteCapacity(writeCapacity int64) Config {
 // WithDynamoWaiterDelay returns a Config with a modified dynamo waiter delay
 func (c Config) WithDynamoWaiterDelay(delay time.Duration) Config {
 	c.dynamoWaiterDelay = delay
+	return c
+}
+
+// WithShardIteratorType returns a Config with a modified shard iterator type
+func (c Config) WithShardIteratorType(t string) Config {
+	c.shardIteratorType = t
 	return c
 }
 
